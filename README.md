@@ -78,6 +78,7 @@ Exemplo:
 ```env
 SVRS_PFX_PATH=config/certificado.pfx
 SVRS_PFX_PASSWORD=troque_aqui
+SVRS_CA_BUNDLE=certs/svrs-chain.pem
 API_KEY=troque_por_uma_chave_longa_e_forte
 API_KEY_HEADER_NAME=X-API-Key
 APP_ENV=development
@@ -90,6 +91,7 @@ SHOW_DOCS=true
 - `SVRS_PFX_PASSWORD`: senha do certificado
 - `API_KEY`: chave exigida para acessar a API
 - `API_KEY_HEADER_NAME`: nome do header da autenticacao
+- `SVRS_CA_BUNDLE`: bundle CA usado para validar o SSL da SVRS
 - `APP_ENV`: ambiente da aplicacao, por exemplo `development` ou `production`
 - `SHOW_DOCS`: controla se `/docs`, `/redoc` e `/openapi.json` ficam ativos
 - `ENABLE_DEBUG_ENDPOINTS`: habilita endpoints temporarios de diagnostico
@@ -311,6 +313,7 @@ Exemplo de variaveis em producao:
 ```env
 SVRS_PFX_PATH=/app/config/certificado.pfx
 SVRS_PFX_PASSWORD=troque_aqui
+SVRS_CA_BUNDLE=/app/certs/svrs-chain.pem
 API_KEY=troque_por_uma_chave_forte
 API_KEY_HEADER_NAME=X-API-Key
 APP_ENV=production

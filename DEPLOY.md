@@ -8,6 +8,7 @@ Campos principais:
 
 - `SVRS_PFX_PATH`: caminho do certificado `.pfx`
 - `SVRS_PFX_PASSWORD`: senha do certificado
+- `SVRS_CA_BUNDLE`: caminho do bundle CA da SVRS
 - `API_KEY`: chave exigida na chamada da API
 - `API_KEY_HEADER_NAME`: header da chave, por padrao `X-API-Key`
 - `APP_ENV=production`

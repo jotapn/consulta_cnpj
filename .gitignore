@@ -11,6 +11,8 @@ config/
 *.p12
 *.pem
 *.key
+!certs/
+!certs/*.pem
 
 .DS_Store
 Thumbs.db
