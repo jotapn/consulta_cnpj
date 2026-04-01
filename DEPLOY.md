@@ -11,7 +11,7 @@ Campos principais:
 - `API_KEY`: chave exigida na chamada da API
 - `API_KEY_HEADER_NAME`: header da chave, por padrao `X-API-Key`
 - `APP_ENV=production`
-- `SHOW_DOCS=false`
+- `SHOW_DOCS=true`
 
 ## Subindo manualmente
 

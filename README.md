@@ -314,7 +314,7 @@ SVRS_PFX_PASSWORD=troque_aqui
 API_KEY=troque_por_uma_chave_forte
 API_KEY_HEADER_NAME=X-API-Key
 APP_ENV=production
-SHOW_DOCS=false
+SHOW_DOCS=true
 ```
 
 ## Erros comuns

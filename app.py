@@ -35,9 +35,6 @@ ENABLE_DEBUG_ENDPOINTS = os.getenv("ENABLE_DEBUG_ENDPOINTS", "false").strip().lo
     "1", "true", "yes", "on"
 }
 
-if APP_ENV == "production":
-    SHOW_DOCS = os.getenv("SHOW_DOCS", "false").strip().lower() in {"1", "true", "yes", "on"}
-
 logging.basicConfig(
     level=os.getenv("LOG_LEVEL", "INFO").upper(),
     format="%(asctime)s %(levelname)s %(name)s %(message)s"
