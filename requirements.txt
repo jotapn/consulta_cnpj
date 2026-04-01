@@ -1,0 +1,8 @@
+fastapi
+uvicorn[standard]
+requests
+cryptography
+python-multipart
+python-dotenv
+certifi
+truststore
