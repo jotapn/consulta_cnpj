@@ -1,5 +1,6 @@
 import os
 import logging
+import ssl
 import tempfile
 import xml.etree.ElementTree as ET
 from contextlib import contextmanager
@@ -9,14 +10,12 @@ from dotenv import load_dotenv
 
 load_dotenv()
 
-import truststore
-truststore.inject_into_ssl()
-
-import certifi
 import requests
 from fastapi import Depends, FastAPI, HTTPException, Security
+from requests.adapters import HTTPAdapter
 from fastapi.security import APIKeyHeader
 from pydantic import BaseModel, Field
+from urllib3.poolmanager import PoolManager
 from cryptography.hazmat.primitives.serialization import (
     Encoding,
     PrivateFormat,
@@ -253,6 +252,25 @@ def montar_soap_consulta(cuf: str, cnpj: Optional[str], ie: Optional[str], cpf: 
     )
 
 
+class SystemTrustHTTPAdapter(HTTPAdapter):
+    def init_poolmanager(self, connections, maxsize, block=False, **pool_kwargs):
+        ssl_context = ssl.create_default_context()
+        self.poolmanager = PoolManager(
+            num_pools=connections,
+            maxsize=maxsize,
+            block=block,
+            ssl_context=ssl_context,
+            **pool_kwargs,
+        )
+
+
+def criar_sessao_svrs() -> requests.Session:
+    session = requests.Session()
+    adapter = SystemTrustHTTPAdapter()
+    session.mount("https://", adapter)
+    return session
+
+
 def chamar_svrs(caminho_pfx: str, senha_pfx: Optional[str], soap_xml: str) -> str:
     logger.info("Iniciando consulta ao WS da SVRS.")
     cert_pem, key_pem = extrair_cert_e_key_do_pfx(caminho_pfx, senha_pfx)
@@ -264,17 +282,17 @@ def chamar_svrs(caminho_pfx: str, senha_pfx: Optional[str], soap_xml: str) -> st
 
     with arquivos_temporarios_certificado(cert_pem, key_pem) as (cert_path, key_path):
         try:
-            response = requests.post(
-                SVRS_URL,
-                data=soap_xml.encode("utf-8"),
-                headers=headers,
-                cert=(cert_path, key_path),
-                verify=certifi.where(),
-                timeout=30
-            )
-            response.raise_for_status()
-            logger.info("Consulta ao WS da SVRS concluida com sucesso.")
-            return response.text
+            with criar_sessao_svrs() as session:
+                response = session.post(
+                    SVRS_URL,
+                    data=soap_xml.encode("utf-8"),
+                    headers=headers,
+                    cert=(cert_path, key_path),
+                    timeout=30
+                )
+                response.raise_for_status()
+                logger.info("Consulta ao WS da SVRS concluida com sucesso.")
+                return response.text
 
         except requests.exceptions.SSLError as e:
             logger.exception("Erro SSL/TLS ao conectar no WS da SVRS.")
