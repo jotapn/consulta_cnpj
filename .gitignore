@@ -1,0 +1,16 @@
+.venv/
+__pycache__/
+*.py[cod]
+
+.env
+.env.*
+!.env.example
+
+config/
+*.pfx
+*.p12
+*.pem
+*.key
+
+.DS_Store
+Thumbs.db

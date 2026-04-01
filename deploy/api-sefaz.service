@@ -1,0 +1,15 @@
+[Unit]
+Description=API Consulta Cadastro SVRS
+After=network.target
+
+[Service]
+User=www-data
+Group=www-data
+WorkingDirectory=/opt/api_sefaz
+EnvironmentFile=/opt/api_sefaz/.env
+ExecStart=/opt/api_sefaz/.venv/bin/uvicorn app:app --host 127.0.0.1 --port 8000 --proxy-headers --forwarded-allow-ips=127.0.0.1
+Restart=always
+RestartSec=5
+
+[Install]
+WantedBy=multi-user.target
