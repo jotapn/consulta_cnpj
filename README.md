@@ -92,6 +92,8 @@ SHOW_DOCS=true
 - `API_KEY_HEADER_NAME`: nome do header da autenticacao
 - `APP_ENV`: ambiente da aplicacao, por exemplo `development` ou `production`
 - `SHOW_DOCS`: controla se `/docs`, `/redoc` e `/openapi.json` ficam ativos
+- `ENABLE_DEBUG_ENDPOINTS`: habilita endpoints temporarios de diagnostico
+- `LOG_LEVEL`: nivel de log da aplicacao, por exemplo `INFO` ou `DEBUG`
 
 ## Como rodar localmente
 
@@ -175,6 +177,21 @@ Regras:
 - `cnpj` deve ter 14 digitos
 - `cpf` deve ter 11 digitos
 
+### `GET /debug-pfx`
+
+Endpoint opcional de diagnostico do certificado.
+
+Ele so existe quando:
+
+- `ENABLE_DEBUG_ENDPOINTS=true`
+
+Ele tambem exige `X-API-Key`.
+
+Uso recomendado:
+
+- habilitar temporariamente em investigacoes
+- desabilitar em producao normal
+
 ## Exemplo de uso com cURL
 
 ```bash
@@ -244,6 +261,7 @@ print(response.json())
 - autenticacao por `API_KEY`
 - falha na inicializacao se `APP_ENV=production` e `API_KEY` estiver vazia
 - docs desativaveis em producao
+- endpoint de diagnostico desligado por padrao
 - certificado fora do Git
 - `.env` fora do Git
 - endpoint `/health` enxuto

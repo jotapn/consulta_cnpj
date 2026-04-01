@@ -1,4 +1,5 @@
 import os
+import logging
 import tempfile
 import xml.etree.ElementTree as ET
 from contextlib import contextmanager
@@ -31,9 +32,18 @@ API_KEY = os.getenv("API_KEY", "")
 API_KEY_HEADER_NAME = os.getenv("API_KEY_HEADER_NAME", "X-API-Key")
 APP_ENV = os.getenv("APP_ENV", "development").strip().lower()
 SHOW_DOCS = os.getenv("SHOW_DOCS", "true").strip().lower() in {"1", "true", "yes", "on"}
+ENABLE_DEBUG_ENDPOINTS = os.getenv("ENABLE_DEBUG_ENDPOINTS", "false").strip().lower() in {
+    "1", "true", "yes", "on"
+}
 
 if APP_ENV == "production":
     SHOW_DOCS = os.getenv("SHOW_DOCS", "false").strip().lower() in {"1", "true", "yes", "on"}
+
+logging.basicConfig(
+    level=os.getenv("LOG_LEVEL", "INFO").upper(),
+    format="%(asctime)s %(levelname)s %(name)s %(message)s"
+)
+logger = logging.getLogger("api_sefaz")
 
 UF_CODIGO_PARA_SIGLA = {
     "11": "RO", "12": "AC", "13": "AM", "14": "RR", "15": "PA", "16": "AP", "17": "TO",
@@ -122,6 +132,7 @@ def validar_entrada(uf: str, cnpj: Optional[str], ie: Optional[str], cpf: Option
 
 def extrair_cert_e_key_do_pfx(caminho_pfx: str, senha_pfx: Optional[str]) -> tuple[bytes, bytes]:
     if not os.path.exists(caminho_pfx):
+        logger.error("Certificado nao encontrado no caminho configurado.")
         raise HTTPException(
             status_code=500,
             detail="Arquivo PFX/P12 nao encontrado."
@@ -138,6 +149,7 @@ def extrair_cert_e_key_do_pfx(caminho_pfx: str, senha_pfx: Optional[str]) -> tup
             senha_normalizada.encode("utf-8") if senha_normalizada else None
         )
     except ValueError as e:
+        logger.exception("Falha ao ler o certificado PFX/P12.")
         raise HTTPException(
             status_code=400,
             detail=(
@@ -146,12 +158,14 @@ def extrair_cert_e_key_do_pfx(caminho_pfx: str, senha_pfx: Optional[str]) -> tup
             )
         ) from e
     except Exception as e:
+        logger.exception("Erro inesperado ao processar o certificado PFX/P12.")
         raise HTTPException(
             status_code=500,
             detail="Erro ao processar o certificado PFX/P12."
         ) from e
 
     if private_key is None or certificate is None:
+        logger.error("PFX/P12 sem chave privada ou certificado utilizavel.")
         raise HTTPException(
             status_code=400,
             detail="O PFX/P12 foi lido, mas nao contem chave privada e certificado utilizaveis."
@@ -240,6 +254,7 @@ def montar_soap_consulta(cuf: str, cnpj: Optional[str], ie: Optional[str], cpf: 
 
 
 def chamar_svrs(caminho_pfx: str, senha_pfx: Optional[str], soap_xml: str) -> str:
+    logger.info("Iniciando consulta ao WS da SVRS.")
     cert_pem, key_pem = extrair_cert_e_key_do_pfx(caminho_pfx, senha_pfx)
 
     headers = {
@@ -258,25 +273,30 @@ def chamar_svrs(caminho_pfx: str, senha_pfx: Optional[str], soap_xml: str) -> st
                 timeout=30
             )
             response.raise_for_status()
+            logger.info("Consulta ao WS da SVRS concluida com sucesso.")
             return response.text
 
         except requests.exceptions.SSLError as e:
+            logger.exception("Erro SSL/TLS ao conectar no WS da SVRS.")
             raise HTTPException(
                 status_code=502,
                 detail=f"Erro SSL/TLS ao conectar no WS da SVRS: {str(e)}"
             ) from e
         except requests.exceptions.Timeout as e:
+            logger.exception("Timeout ao consultar o WS da SVRS.")
             raise HTTPException(
                 status_code=504,
                 detail="Timeout ao consultar o WS da SVRS."
             ) from e
         except requests.exceptions.HTTPError as e:
+            logger.exception("Erro HTTP retornado pelo WS da SVRS.")
             body = e.response.text if e.response is not None else ""
             raise HTTPException(
                 status_code=502,
                 detail=f"Erro HTTP no WS da SVRS: {body[:4000]}"
             ) from e
         except requests.exceptions.RequestException as e:
+            logger.exception("Erro de rede ao chamar o WS da SVRS.")
             raise HTTPException(
                 status_code=502,
                 detail=f"Erro ao chamar o WS da SVRS: {str(e)}"
@@ -348,6 +368,18 @@ def extrair_retorno_normalizado(xml_texto: str) -> Dict[str, Any]:
 @app.get("/health")
 def health():
     return {"ok": True}
+
+
+if ENABLE_DEBUG_ENDPOINTS:
+    @app.get("/debug-pfx")
+    def debug_pfx(_: None = Depends(validar_api_key)):
+        cert_pem, key_pem = extrair_cert_e_key_do_pfx(PFX_PATH, PFX_PASSWORD)
+        return {
+            "ok": True,
+            "pfx_path": PFX_PATH,
+            "cert_bytes": len(cert_pem),
+            "key_bytes": len(key_pem),
+        }
 
 
 @app.post("/consulta-cadastro", response_model=ConsultaResponse)
